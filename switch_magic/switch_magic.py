@@ -1,40 +1,76 @@
-# skip magic command
+# switch set of magic commands
 #
-# November 2018
+# February 2019
 #
 # Originally from:
 # https://stackoverflow.com/questions/26494747/simple-way-to-choose-which-cells-to-run-in-ipython-notebook-during-run-all
 # By: Robbe
 #
 """
-Magic function that skip cell execution based on the condition on the line.
+Magic functions that run or skip cell execution based on the condition on the line.
 
-Place on first line of cell to control execution.
+Put on first line of cell to control execution.
 
-    %skip True
+    %%skip_if True
     print(42)
 
-skips cell execution.
+always skips cell execution.
 
-    %skip $run_flags['steptype'] is False
+    %%skip_if $skip_flags['steptype']
     print(42)
 
-to evaluate `run_flags` variable as skip condition.
+evaluates `skip_flags` value as the skip condition for running the cell.
+
+    %%run_if True
+    print(42)
+
+runs cell.
+
+    %%run_if $run_flags['steptype']
+    print(42)
+
+evaluates `run_flags` value as the run condition for the cellself.
+
+    %%time_if $run_flags['steptype']
+    print(42)
+
+evaluate `run_flags` value to decide to %%time the cell or go for execution.
 """
 
 __version__ = '0.1.0'
 
 
-def skip(line, cell=None):
+def skip_if(line, cell):
     '''Skips execution of the current line/cell if line evaluates to True.'''
     if eval(line):
         return
     get_ipython().ex(cell)
 
+
+def run_if(line, cell):
+    '''Runs cell if line evaluates to True.'''
+    if not eval(line):
+        return
+    get_ipython().ex(cell)
+
+
+def time_if(line, cell):
+    '''Runs cell if line evaluates to True.'''
+    if eval(line):
+        get_ipython().magics_manager.magics['cell']['time'](cell=cell)
+    else:
+        get_ipython().ex(cell)
+
+
 def load_ipython_extension(shell):
-    '''Registers the skip magic when the extension loads.'''
-    shell.register_magic_function(skip, 'line_cell')
+    '''Registers the switch magics when the extension loads.'''
+    shell.register_magic_function(skip_if, 'cell')
+    shell.register_magic_function(run_if, 'cell')
+    shell.register_magic_function(time_if, 'cell')
+
 
 def unload_ipython_extension(shell):
-    '''Unregisters the skip magic when the extension unloads.'''
-    del shell.magics_manager.magics['cell']['skip']
+    '''Unregisters the switch magics when the extension unloads.'''
+    del shell.magics_manager.magics['cell']['skip_if']
+    del shell.magics_manager.magics['cell']['run_if']
+    del shell.magics_manager.magics['cell']['time_if']
